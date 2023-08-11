@@ -1,6 +1,6 @@
 from io import BytesIO
 from potassium import Potassium, Request, Response
-from diffusers import DiffusionPipeline, DDPMScheduler
+from diffusers import StableDiffusionXLPipeline
 import torch
 import base64
 
