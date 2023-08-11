@@ -10,16 +10,10 @@ app = Potassium("my_app")
 # @app.init runs at startup, and loads models into the app's context
 @app.init
 def init():
-    repo_id="Meina/MeinaUnreal_V3"
-
-    ddpm = DDPMScheduler.from_pretrained(repo_id, subfolder="scheduler")
-    
-    model = DiffusionPipeline.from_pretrained(
-        repo_id, 
-        use_safetensors=True,
-        torch_dtype=torch.float16,
-        scheduler=ddpm
-    ).to("cuda")
+    pipe = StableDiffusionXLPipeline.from_pretrained(
+        "stabilityai/stable-diffusion-xl-base-1.0", torch_dtype=torch.float16, variant="fp16", use_safetensors=True
+    )
+    model = pipe.to("cuda")
 
     context = {
         "model": model,
@@ -33,20 +27,23 @@ def handler(context: dict, request: Request) -> Response:
     model = context.get("model")
 
     prompt = request.json.get("prompt")
-    negative_prompt = "(worst quality, low quality:1.4), monochrome, zombie, (interlocked fingers), cleavage, nudity, naked, nude"
+    # negative_prompt = "(worst quality, low quality:1.4), monochrome, zombie, (interlocked fingers), cleavage, nudity, naked, nude"
 
-    image = model(
-        prompt=prompt,
-        negative_prompt=negative_prompt,
-        guidance_scale=7,
-        num_inference_steps=request.json.get("steps", 30),
-        generator=torch.Generator(device="cuda").manual_seed(request.json.get("seed")) if request.json.get("seed") else None,
-        width=512,
-        height=512,
-    ).images[0]
+    # image = model(
+    #     prompt=prompt,
+    #     negative_prompt=negative_prompt,
+    #     guidance_scale=7,
+    #     num_inference_steps=request.json.get("steps", 30),
+    #     generator=torch.Generator(device="cuda").manual_seed(request.json.get("seed")) if request.json.get("seed") else None,
+    #     width=512,
+    #     height=512,
+    # ).images[0]
+
+    # prompt = "Astronaut in a jungle, cold color palette, muted colors, detailed, 8k"
+    image = model(prompt=prompt).images[0]
 
     buffered = BytesIO()
-    image.save(buffered, format="JPEG", quality=80)
+    image.save(buffered, format="JPEG", quality=100)
     img_str = base64.b64encode(buffered.getvalue())
 
     # You could also consider writing this image to S3
